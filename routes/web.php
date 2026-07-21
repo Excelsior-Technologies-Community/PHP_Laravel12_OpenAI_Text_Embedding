@@ -10,6 +10,9 @@ Route::get('/demo', [EmbeddingController::class, 'demo'])->name('demo');
 Route::post('/embedding/generate', [EmbeddingController::class, 'generateEmbedding'])->name('embedding.generate');
 Route::post('/embedding/compare', [EmbeddingController::class, 'compareTexts'])->name('embedding.compare');
 
+Route::post('/embedding/search', [EmbeddingController::class, 'search'])
+    ->name('embedding.search');
+
 // Utility routes
 Route::get('/clear-rate-limit', [EmbeddingController::class, 'clearRateLimit'])->name('clear.rate.limit');
 Route::get('/api-status', [EmbeddingController::class, 'apiStatus'])->name('api.status');

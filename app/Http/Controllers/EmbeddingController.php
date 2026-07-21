@@ -60,6 +60,8 @@ class EmbeddingController extends Controller
 
             'embedding_length' => count($result['embedding']),
 
+            'embedding_vector' => $result['embedding'],
+
             'tokens_used' => $result['usage']['total_tokens'],
 
             'is_mock' => $result['is_mock'] ?? false
@@ -121,10 +123,70 @@ class EmbeddingController extends Controller
             'similarity' => $similarity,
             'similarity_percentage' => round($similarity * 100, 2),
             'tokens_used' => $result1['usage']['total_tokens'] + $result2['usage']['total_tokens'],
-            'is_mock' => ($result1['is_mock'] ?? false) || ($result2['is_mock'] ?? false)
+            'is_mock' => ($result1['is_mock'] ?? false) || ($result2['is_mock'] ?? false),
+            'model' => $result1['model'],
         ]);
     }
 
+    /**
+     * Semantic Similarity Search
+     */
+    public function search(Request $request)
+    {
+        $request->validate([
+            'query' => 'required|string|max:3000',
+        ]);
+
+        // Generate embedding for search query
+        $queryEmbedding = $this->openAIService->generateEmbedding(
+            $request->input('query')
+        );
+
+        if (!$queryEmbedding['success']) {
+            return back()->with('error', $queryEmbedding['error']);
+        }
+
+        // Get all stored embeddings
+        $records = EmbeddingHistory::whereNotNull('embedding_vector')->get();
+
+        if ($records->isEmpty()) {
+            return back()->with('error', 'No embeddings found in history.');
+        }
+
+        $results = [];
+
+        foreach ($records as $record) {
+
+            $similarity = $this->openAIService->cosineSimilarity(
+                $queryEmbedding['embedding'],
+                $record->embedding_vector
+            );
+
+            $results[] = [
+                'id' => $record->id,
+                'text' => $record->text,
+                'similarity' => $similarity,
+                'percentage' => round($similarity * 100, 2),
+                'model' => $record->model,
+                'created_at' => $record->created_at,
+            ];
+        }
+
+        usort($results, function ($a, $b) {
+            return $b['similarity'] <=> $a['similarity'];
+        });
+
+        return view('embedding.similarity', [
+            'query' => $request->input('query'),
+            'most_similar' => $results[0],
+            'all_similarities' => $results,
+            'tokens_used' => $queryEmbedding['usage']['total_tokens'],
+
+            // NEW
+            'is_mock' => $queryEmbedding['is_mock'] ?? false,
+            'model' => $queryEmbedding['model'],
+        ]);
+    }
     /**
      * Show demo page
      */
