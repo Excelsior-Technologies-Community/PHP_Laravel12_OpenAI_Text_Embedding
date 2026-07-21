@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EmbeddingHistory;
 use Illuminate\Http\Request;
 use App\Services\OpenAIService;
 
@@ -20,7 +21,7 @@ class EmbeddingController extends Controller
     public function index()
     {
         $apiStatus = $this->openAIService->getApiStatus();
-        
+
         return view('embedding.index', [
             'apiStatus' => $apiStatus,
             'isMockMode' => $this->openAIService->isMockMode()
@@ -40,16 +41,30 @@ class EmbeddingController extends Controller
 
         if (!$result['success']) {
             $error = $result['error'];
-            
+
             // Handle rate limit error
             if (strpos($error, 'rate limit') !== false && isset($result['retry_after'])) {
                 $error = "Rate limit exceeded. Please wait " . $result['retry_after'] . " seconds and try again.";
             }
-            
+
             return back()
                 ->withInput()
                 ->with('error', $error);
         }
+
+        EmbeddingHistory::create([
+
+            'text' => $request->text,
+
+            'model' => $result['model'],
+
+            'embedding_length' => count($result['embedding']),
+
+            'tokens_used' => $result['usage']['total_tokens'],
+
+            'is_mock' => $result['is_mock'] ?? false
+
+        ]);
 
         return view('embedding.result', [
             'text' => $request->text,
@@ -72,7 +87,7 @@ class EmbeddingController extends Controller
         ]);
 
         $result1 = $this->openAIService->generateEmbedding($request->text1);
-        
+
         if (!$result1['success']) {
             $error = $result1['error'];
             if (strpos($error, 'rate limit') !== false && isset($result1['retry_after'])) {
@@ -84,7 +99,7 @@ class EmbeddingController extends Controller
         }
 
         $result2 = $this->openAIService->generateEmbedding($request->text2);
-        
+
         if (!$result2['success']) {
             $error = $result2['error'];
             if (strpos($error, 'rate limit') !== false && isset($result2['retry_after'])) {
@@ -132,7 +147,7 @@ class EmbeddingController extends Controller
             'isMockMode' => $this->openAIService->isMockMode()
         ]);
     }
-    
+
     /**
      * Clear rate limit (for testing)
      */
@@ -141,12 +156,60 @@ class EmbeddingController extends Controller
         $this->openAIService->clearRateLimit();
         return back()->with('success', 'Rate limit cache cleared successfully.');
     }
-    
+
     /**
      * Check API status (AJAX endpoint)
      */
     public function apiStatus()
     {
         return response()->json($this->openAIService->getApiStatus());
+    }
+
+    /**
+     * Embedding History
+     */
+    public function history(Request $request)
+    {
+        $search = $request->search;
+
+        $query = EmbeddingHistory::query();
+
+        if ($search) {
+
+            $query->where('text', 'like', "%{$search}%")
+                ->orWhere('model', 'like', "%{$search}%");
+        }
+
+        $histories = $query
+            ->oldest()
+            ->paginate(5);
+
+        $stats = [
+
+            'total' => EmbeddingHistory::count(),
+
+            'today' => EmbeddingHistory::whereDate('created_at', today())->count(),
+
+            'tokens' => EmbeddingHistory::sum('tokens_used'),
+
+            'mock' => EmbeddingHistory::where('is_mock', true)->count()
+
+        ];
+
+        return view('embedding.history', compact(
+            'histories',
+            'stats',
+            'search'
+        ));
+    }
+
+    /**
+     * Delete History
+     */
+    public function destroy($id)
+    {
+        EmbeddingHistory::findOrFail($id)->delete();
+
+        return back()->with('success', 'History deleted successfully.');
     }
 }
