@@ -13,3 +13,9 @@ Route::post('/embedding/compare', [EmbeddingController::class, 'compareTexts'])-
 // Utility routes
 Route::get('/clear-rate-limit', [EmbeddingController::class, 'clearRateLimit'])->name('clear.rate.limit');
 Route::get('/api-status', [EmbeddingController::class, 'apiStatus'])->name('api.status');
+
+Route::get('/history', [EmbeddingController::class, 'history'])
+    ->name('embedding.history');
+
+Route::delete('/history/{id}', [EmbeddingController::class, 'destroy'])
+    ->name('embedding.destroy');
