@@ -21,11 +21,28 @@ class EmbeddingController extends Controller
     public function index()
     {
         $apiStatus = $this->openAIService->getApiStatus();
+        $isMockMode = $this->openAIService->isMockMode();
 
-        return view('embedding.index', [
-            'apiStatus' => $apiStatus,
-            'isMockMode' => $this->openAIService->isMockMode()
-        ]);
+        $documents = \App\Models\Document::withCount('chunks')->latest()->get();
+        $ragMessages = \App\Models\RagMessage::latest()->take(15)->get();
+        $recentHistories = EmbeddingHistory::latest()->take(6)->get();
+
+        $stats = [
+            'total_documents' => \App\Models\Document::count(),
+            'total_chunks' => \App\Models\DocumentChunk::count(),
+            'total_embeddings' => EmbeddingHistory::count() + \App\Models\DocumentChunk::count(),
+            'total_tokens' => (int) EmbeddingHistory::sum('tokens_used') + (int) \App\Models\Document::sum('total_tokens'),
+            'total_rag_queries' => \App\Models\RagMessage::count(),
+        ];
+
+        return view('embedding.index', compact(
+            'apiStatus',
+            'isMockMode',
+            'documents',
+            'ragMessages',
+            'recentHistories',
+            'stats'
+        ));
     }
 
     /**
