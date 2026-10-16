@@ -41,22 +41,26 @@
                 <a href="{{ route('home') }}" class="text-2xl font-bold">
                     <i class="fas fa-robot mr-2"></i>OpenAI Embeddings
                 </a>
-                <div class="space-x-4">
-                    <a href="{{ route('home') }}" class="hover:text-gray-200">
-                        <i class="fas fa-home mr-1"></i>Home
+                <div class="space-x-3 flex items-center text-sm font-medium">
+                    <a href="{{ route('home', ['tab' => 'chat']) }}" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition">
+                        <i class="fas fa-comments mr-1 text-emerald-300"></i>Ask Docs (RAG)
                     </a>
 
-                    <a href="{{ route('demo') }}" class="hover:text-gray-200">
-                        <i class="fas fa-play mr-1"></i>Demo
+                    <a href="{{ route('home', ['tab' => 'documents']) }}" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition">
+                        <i class="fas fa-file-pdf mr-1 text-sky-300"></i>Doc Chunker
                     </a>
 
-                    <a href="{{ route('embedding.history') }}" class="hover:text-gray-200">
-                        <i class="fas fa-history mr-1"></i>History
+                    <a href="{{ route('home', ['tab' => 'playground']) }}" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition">
+                        <i class="fas fa-bolt mr-1 text-amber-300"></i>Embeddings
+                    </a>
+
+                    <a href="{{ route('embedding.history') }}" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition">
+                        <i class="fas fa-history mr-1 text-purple-300"></i>History
                     </a>
 
                     @if(app()->environment('local'))
-                    <a href="{{ route('clear.rate.limit') }}" class="text-yellow-300 hover:text-yellow-200">
-                        <i class="fas fa-redo mr-1"></i>Clear Rate Limit
+                    <a href="{{ route('clear.rate.limit') }}" class="text-yellow-300 hover:text-yellow-200 text-xs">
+                        <i class="fas fa-redo mr-1"></i>Reset Limits
                     </a>
                     @endif
                 </div>
